@@ -1,0 +1,25 @@
+[package]
+name = "bevy_ufbx"
+version = "0.1.0"
+edition = "2024"
+authors = ["Artur <arturmisiurev@gmail.com>"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/FizzWizzleDazzle/bevy_ufbx"
+description = "FBX asset loader for Bevy using the ufbx library"
+keywords = ["bevy", "fbx", "asset", "loader"]
+categories = ["game-development", "graphics"]
+
+[dependencies]
+bevy = { version = "0.16", default-features = false, features = [
+    "bevy_asset",
+    "bevy_render",
+    "bevy_pbr",
+    "bevy_scene",
+]}
+ufbx = "0.9"
+thiserror = "2.0"
+serde = { version = "1.0", features = ["derive"] }
+
+[dev-dependencies]
+bevy = { version = "0.16", default-features = true }
+serde_json = "1.0.145"
