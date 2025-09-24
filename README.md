@@ -68,7 +68,7 @@ use bevy::prelude::*;
 use bevy_ufbx::FbxLoaderSettings;
 
 fn load_with_settings(asset_server: Res<AssetServer>) {
-    asset_server.load_with_settings::<Fbx>(
+    asset_server.load_with_settings::<Fbx, FbxLoaderSettings>(
         "models/environment.fbx",
         |settings: &mut FbxLoaderSettings| {
             settings.load_cameras = false;
@@ -112,6 +112,7 @@ The plugin uses labeled sub-assets to allow loading specific parts of an FBX fil
 - Skeletal animation
 - Skinning with bone weights
 - Transform animations
+(Planned feature, not yet forwarded to Bevy)
 
 ### Scene Elements
 - Node hierarchy
