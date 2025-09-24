@@ -112,7 +112,8 @@ The plugin uses labeled sub-assets to allow loading specific parts of an FBX fil
 - Skeletal animation
 - Skinning with bone weights
 - Transform animations
-(Planned feature, not yet forwarded to Bevy)
+
+#### (Animations are a planned feature, not yet forwarded to Bevy)
 
 ### Scene Elements
 - Node hierarchy
