@@ -7,8 +7,6 @@ use crate::utils::convert_matrix;
 use bevy::asset::{Handle, LoadContext};
 use bevy::pbr::StandardMaterial;
 use bevy::prelude::*;
-use bevy::render::mesh::Mesh;
-use bevy::render::view::visibility::Visibility;
 use bevy::scene::Scene;
 use std::collections::HashMap;
 

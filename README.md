@@ -18,9 +18,21 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-bevy_ufbx = "0.1"
-bevy = "0.16"
+bevy_ufbx = "0.1.0-17"
+bevy = "0.17"
 ```
+
+### Versioning
+
+This crate uses a versioning scheme of `MAJOR.MINOR.PATCH-BEVY_VERSION`:
+- `MAJOR.MINOR.PATCH` follows semantic versioning for the crate itself
+- `-BEVY_VERSION` indicates Bevy compatibility (e.g., `-17` means Bevy 0.17)
+
+Examples:
+- `0.1.0-17` - First release for Bevy 0.17
+- `0.1.1-17` - Bug fix for Bevy 0.17
+- `0.2.0-17` - New features for Bevy 0.17
+- `0.1.0-18` - First release for Bevy 0.18
 
 ## Usage
 

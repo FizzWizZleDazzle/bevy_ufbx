@@ -5,7 +5,7 @@ use crate::label::FbxAssetLabel;
 use crate::loader::FbxLoaderSettings;
 use bevy::asset::{Handle, LoadContext};
 use bevy::prelude::*;
-use bevy::render::mesh::{Indices, Mesh, PrimitiveTopology, VertexAttributeValues};
+use bevy::mesh::{Indices, PrimitiveTopology, VertexAttributeValues};
 use std::collections::HashMap;
 
 /// Process all meshes from the FBX scene.
@@ -167,8 +167,8 @@ pub fn create_mesh_from_group(
         // Indices
         bevy_mesh.insert_indices(Indices::U32(indices.to_vec()));
 
-        bevy_mesh
-    });
+        Ok::<_, FbxError>(bevy_mesh)
+    })?;
 
     Ok(handle)
 }

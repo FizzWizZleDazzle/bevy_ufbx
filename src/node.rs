@@ -6,7 +6,7 @@ use crate::types::{FbxNode, FbxSkin};
 use crate::utils::{convert_matrix, convert_transform};
 use bevy::asset::{Handle, LoadContext};
 use bevy::prelude::*;
-use bevy::render::mesh::{skinning::SkinnedMeshInverseBindposes, Mesh};
+use bevy::mesh::skinning::SkinnedMeshInverseBindposes;
 use std::collections::HashMap;
 
 /// Process nodes and build hierarchy.

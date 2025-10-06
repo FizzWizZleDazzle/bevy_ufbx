@@ -4,8 +4,7 @@ use bevy::asset::{Asset, Handle};
 use bevy::math::Affine2;
 use bevy::pbr::StandardMaterial;
 use bevy::prelude::*;
-use bevy::render::mesh::skinning::SkinnedMeshInverseBindposes;
-use bevy::render::mesh::Mesh;
+use bevy::mesh::skinning::SkinnedMeshInverseBindposes;
 use bevy::scene::Scene;
 use std::collections::HashMap;
 
