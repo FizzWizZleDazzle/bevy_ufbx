@@ -32,7 +32,7 @@ Examples:
 - `0.1.0-17` - First release for Bevy 0.17
 - `0.1.1-17` - Bug fix for Bevy 0.17
 - `0.2.0-17` - New features for Bevy 0.17
-- `0.1.0-18` - First release for Bevy 0.18
+- `0.2.0-18` - Release for Bevy 0.18
 
 ## Usage
 
