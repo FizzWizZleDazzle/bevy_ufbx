@@ -16,7 +16,7 @@ bevy = { version = "0.17", default-features = false, features = [
     "bevy_pbr",
     "bevy_scene",
 ]}
-ufbx = "0.9"
+ufbx = "0.10"
 thiserror = "2.0"
 serde = { version = "1.0", features = ["derive"] }
 
