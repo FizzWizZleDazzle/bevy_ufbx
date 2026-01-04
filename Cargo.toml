@@ -1,6 +1,6 @@
 [package]
 name = "bevy_ufbx"
-version = "0.1.0-17"
+version = "0.17.0"
 edition = "2024"
 authors = ["Artur <arturmisiurev@gmail.com>"]
 license = "MIT OR Apache-2.0"
