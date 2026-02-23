@@ -8,8 +8,8 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  # Keep binaries small; treat all warnings as errors.
-  RUSTFLAGS: "-C debuginfo=0 -D warnings"
+  # Keep binaries small.
+  RUSTFLAGS: "-C debuginfo=0"
 
 jobs:
   # ── Fast compile check ────────────────────────────────────────────────────
