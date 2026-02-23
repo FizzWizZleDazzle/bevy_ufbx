@@ -1,34 +1,23 @@
 # bevy_ufbx
 
-A Bevy plugin for loading FBX files using the ufbx library.
+FBX asset loader for [Bevy](https://bevyengine.org) powered by [ufbx](https://github.com/ufbx/ufbx).
 
-## Features
+## Bevy compatibility
 
-- Load FBX files directly into Bevy
-- Support for meshes with multiple materials
-- PBR material support with textures
-- Skeletal animation with skinning
-- Scene hierarchy preservation
-- Support for lights and cameras
-- Flexible loading options
+| bevy | bevy_ufbx |
+|------|-----------|
+| 0.18 | 0.18      |
+| 0.17 | 0.17      |
 
 ## Installation
 
-Add to your `Cargo.toml`:
-
 ```toml
 [dependencies]
-bevy_ufbx = "0.17"
-bevy = "0.17"
+bevy     = "0.18"
+bevy_ufbx = "0.18"
 ```
 
-### Versioning
-
-The crate minor version matches Bevy's version.
-
-## Usage
-
-### Basic Setup
+## Quick start
 
 ```rust
 use bevy::prelude::*;
@@ -38,111 +27,86 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(FbxPlugin)
+        .add_systems(Startup, setup)
         .run();
 }
-```
 
-### Loading FBX Files
-
-```rust
-use bevy::prelude::*;
-use bevy_ufbx::{Fbx, FbxAssetLabel};
-
-fn load_fbx(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-) {
-    // Load the entire FBX file
-    let fbx_handle = asset_server.load::<Fbx>("models/character.fbx");
-
-    // Or load specific sub-assets with labels
-    let scene = asset_server.load::<Scene>("models/character.fbx#Scene0");
-    let mesh = asset_server.load::<Mesh>("models/character.fbx#Mesh0");
-    let material = asset_server.load::<StandardMaterial>("models/character.fbx#Material0");
-
-    // Spawn the scene
-    commands.spawn(SceneRoot(scene));
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands.spawn(Camera3d::default());
+    commands.spawn(SceneRoot(
+        asset_server.load("character.fbx#Scene0"),
+    ));
 }
 ```
 
-### Custom Loading Settings
+## Loading with custom settings
 
 ```rust
-use bevy::prelude::*;
-use bevy_ufbx::FbxLoaderSettings;
+use bevy_ufbx::{Fbx, FbxLoaderSettings};
 
-fn load_with_settings(asset_server: Res<AssetServer>) {
+fn setup(asset_server: Res<AssetServer>) {
     asset_server.load_with_settings::<Fbx, FbxLoaderSettings>(
-        "models/environment.fbx",
-        |settings: &mut FbxLoaderSettings| {
-            settings.load_cameras = false;
-            settings.load_lights = false;
-            settings.convert_coordinates = true;
-        }
+        "environment.fbx",
+        |s| {
+            s.load_cameras = false;
+            s.load_lights  = false;
+        },
     );
 }
 ```
 
-## Asset Labels
+### `FbxLoaderSettings` fields
 
-The plugin uses labeled sub-assets to allow loading specific parts of an FBX file:
+| Field                | Type                 | Default                       | Description                                 |
+|----------------------|----------------------|-------------------------------|---------------------------------------------|
+| `load_meshes`        | `RenderAssetUsages`  | `RenderAssetUsages::default()` | Which worlds the mesh is available in       |
+| `load_materials`     | `RenderAssetUsages`  | `RenderAssetUsages::default()` | Which worlds the material is available in   |
+| `load_cameras`       | `bool`               | `true`                        | Import cameras from the FBX                 |
+| `load_lights`        | `bool`               | `true`                        | Import lights from the FBX                  |
+| `include_source`     | `bool`               | `false`                       | Keep raw bytes in the loaded asset          |
+| `convert_coordinates`| `bool`               | `false`                       | Remap axes to Bevy's right-handed Y-up space|
 
-- `Scene{N}` - Scene hierarchy (N is the scene index)
-- `Node{N}` - Individual nodes
-- `Mesh{N}` - Mesh data
-- `Material{N}` - Materials
-- `Texture{N}` - Textures
-- `Animation{N}` - Animations
-- `Skin{N}` - Skinning data
-- `DefaultMaterial` - Default material when none is specified
+## Asset labels
 
-## Supported Features
+Individual sub-assets can be addressed with `#Label` path suffixes:
 
-### Geometry
-- Triangle meshes
-- Multi-material meshes (face groups)
-- Vertex positions, normals, UVs
-- Vertex colors
-- Tangents
+| Label             | Type                | Description                             |
+|-------------------|---------------------|-----------------------------------------|
+| `Scene{N}`        | `Scene`             | Scene hierarchy (N = scene index)       |
+| `Mesh{N}`         | `Mesh`              | Triangulated mesh                       |
+| `Material{N}`     | `StandardMaterial`  | PBR material                            |
+| `Node{N}`         | `FbxNode`           | Transform node                          |
+| `Skin{N}`         | `FbxSkin`           | Skeletal skin                           |
+| `DefaultMaterial` | `StandardMaterial`  | Fallback material when none is present  |
 
-### Materials
-- PBR materials (base color, metallic, roughness)
-- Texture mapping
-- Normal maps
-- Emission
-- Alpha blending
+```rust
+let scene    = asset_server.load::<Scene>("model.fbx#Scene0");
+let mesh     = asset_server.load::<Mesh>("model.fbx#Mesh0");
+let material = asset_server.load::<StandardMaterial>("model.fbx#Material0");
+```
 
-### Animation
-- Skeletal animation
-- Skinning with bone weights
-- Transform animations
+## Supported features
 
-#### (Animations are a planned feature, not yet forwarded to Bevy)
-
-### Scene Elements
-- Node hierarchy
-- Lights (directional, point, spot)
-- Cameras
+- Triangle meshes with positions, normals, and UVs
+- Multi-material meshes (face groups per material)
+- PBR materials (base color, metallic, roughness, normal, emission, AO)
+- Texture mapping, including `.fbm` embedded texture folders
+- Skeletal skinning data (bone weights / bind poses)
+- Scene hierarchy (node transforms)
+- Directional, point, and spot lights
 
 ## Limitations
 
-- Requires FBX files to have been exported with triangulated meshes
-- NURBS and subdivision surfaces are not directly supported
-- Some advanced material features may not be fully supported
+- Animation curves are parsed but **not yet forwarded to Bevy's animation system**
+- Cameras are not imported into Bevy camera components
+- NURBS and subdivision surfaces are not supported (ufbx triangulates on load)
 
-## Examples
+## Example
 
-See the `examples/` directory for more detailed usage examples.
+```sh
+cargo run --example load_fbx -- my_model.fbx
+```
 
 ## License
 
-Licensed under either of:
-
-- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
-- MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
-
-at your option.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+Licensed under either of [MIT](LICENSE-MIT) or [Apache 2.0](LICENSE-APACHE) at your option.

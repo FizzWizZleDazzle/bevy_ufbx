@@ -58,19 +58,74 @@ pub fn process_textures(
     let mut texture_handles = HashMap::new();
 
     for texture in scene.textures.as_ref().iter() {
-        if !texture.filename.is_empty() {
-            let texture_path = if !texture.absolute_filename.is_empty() {
-                texture.absolute_filename.to_string()
+        let asset_path = load_context.path();
+        let fbx_dir = asset_path
+            .path()
+            .parent()
+            .unwrap_or_else(|| std::path::Path::new(""));
+
+        // Construct relative path for Bevy's asset system
+        // Preserves .fbm folder structure if present (e.g., "model.fbm/texture.jpg")
+        let relative_path = if !texture.filename.is_empty() {
+            let filename = texture.filename.as_ref();
+
+            // Check if filename contains an absolute path (Unix or Windows style)
+            // Windows paths can have either : followed by / or \
+            let is_absolute = filename.starts_with('/')
+                || (filename.len() >= 3 && filename.chars().nth(1) == Some(':'));
+
+            if is_absolute {
+                // Extract relative path from absolute path
+                // Look for .fbm folder (FBX's standard embedded texture directory)
+                if let Some(fbm_pos) = filename.rfind(".fbm/").or_else(|| filename.rfind(".fbm\\")) {
+                    // Find the start of the .fbm folder name
+                    let before_fbm = &filename[..fbm_pos];
+                    let folder_start = before_fbm.rfind(&['/', '\\'][..])
+                        .map(|p| p + 1)
+                        .unwrap_or(0);
+                    // Extract from folder name onwards: "model.fbm/texture.jpg"
+                    &filename[folder_start..]
+                } else {
+                    // No .fbm folder, extract just the filename
+                    let last_slash = filename.rfind(&['/', '\\'][..]);
+                    if let Some(pos) = last_slash {
+                        &filename[pos + 1..]
+                    } else {
+                        filename
+                    }
+                }
             } else {
-                let fbx_dir = load_context
-                    .path()
-                    .parent()
-                    .unwrap_or_else(|| std::path::Path::new(""));
-                fbx_dir
-                    .join(texture.filename.as_ref())
-                    .to_string_lossy()
-                    .to_string()
-            };
+                // Use as-is (already relative)
+                filename
+            }
+        } else if !texture.absolute_filename.is_empty() {
+            let abs_path = texture.absolute_filename.as_ref();
+            // Extract relative path from absolute_filename
+            // Look for .fbm folder
+            if let Some(fbm_pos) = abs_path.rfind(".fbm/").or_else(|| abs_path.rfind(".fbm\\")) {
+                let before_fbm = &abs_path[..fbm_pos];
+                let folder_start = before_fbm.rfind(&['/', '\\'][..])
+                    .map(|p| p + 1)
+                    .unwrap_or(0);
+                &abs_path[folder_start..]
+            } else {
+                // No .fbm folder, extract just the filename
+                let last_slash = abs_path.rfind(&['/', '\\'][..]);
+                if let Some(pos) = last_slash {
+                    &abs_path[pos + 1..]
+                } else {
+                    abs_path
+                }
+            }
+        } else {
+            ""
+        };
+
+        if !relative_path.is_empty() {
+            let texture_path = fbx_dir
+                .join(relative_path)
+                .to_string_lossy()
+                .to_string();
 
             let image_handle = load_context.load(texture_path);
             texture_handles.insert(texture.element.element_id, image_handle);

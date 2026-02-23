@@ -48,7 +48,7 @@ impl Default for FbxLoaderSettings {
 ///
 /// This loader handles reading FBX files and converting them into Bevy assets,
 /// including meshes, materials, animations, and scene hierarchies.
-#[derive(Default)]
+#[derive(Default, bevy::reflect::TypePath)]
 pub struct FbxLoader;
 
 impl AssetLoader for FbxLoader {

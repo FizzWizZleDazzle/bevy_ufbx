@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+  # Keep binaries small; treat all warnings as errors.
+  RUSTFLAGS: "-C debuginfo=0 -D warnings"
+
+jobs:
+  # ── Fast compile check ────────────────────────────────────────────────────
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-check-${{ hashFiles('**/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-check-
+            ${{ runner.os }}-cargo-
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libasound2-dev \
+            libudev-dev \
+            libwayland-dev \
+            libxkbcommon-dev
+
+      - name: Check crate
+        run: cargo check
+
+      - name: Check examples
+        run: cargo check --examples
+
+      - name: Check tests
+        run: cargo test --no-run
+
+  # ── Unit & integration tests ──────────────────────────────────────────────
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-test-
+            ${{ runner.os }}-cargo-
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libasound2-dev \
+            libudev-dev \
+            libwayland-dev \
+            libxkbcommon-dev
+
+      # Sparse-clone only the data/ directory from ufbx/ufbx.
+      # --filter=blob:none skips downloading blobs during the initial clone;
+      # they are fetched on demand when the sparse checkout is materialised.
+      - name: Clone ufbx test data
+        run: |
+          git clone \
+            --filter=blob:none \
+            --sparse \
+            --depth 1 \
+            https://github.com/ufbx/ufbx.git \
+            /tmp/ufbx
+          cd /tmp/ufbx
+          git sparse-checkout set data
+
+      - name: Run tests
+        env:
+          UFBX_TEST_DATA: /tmp/ufbx/data
+        run: cargo test -- --nocapture
