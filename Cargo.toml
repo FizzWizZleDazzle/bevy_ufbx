@@ -16,11 +16,11 @@ bevy = { version = "0.18", default-features = false, features = [
     "bevy_pbr",
     "bevy_scene",
 ]}
-ufbx = "0.9"
+ufbx = "0.10"
 thiserror = "2.0"
 serde = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]
 bevy = { version = "0.18", default-features = true }
 serde_json = "1.0.145"
-ufbx = "0.9"
+ufbx = "0.10"
