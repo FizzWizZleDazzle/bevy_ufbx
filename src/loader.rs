@@ -75,11 +75,14 @@ impl AssetLoader for FbxLoader {
         }
 
         // Parse with ufbx
+        // Provide the asset path as a filename hint so ufbx can compute relative_filename
+        let filename_hint = load_context.path().path().to_string_lossy().to_string();
         let root = ufbx::load_memory(
             &bytes,
             ufbx::LoadOpts {
                 target_unit_meters: 1.0,
                 target_axes: ufbx::CoordinateAxes::right_handed_y_up(),
+                filename: ufbx::StringOpt::Ref(&filename_hint),
                 ..Default::default()
             },
         )

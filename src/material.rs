@@ -8,12 +8,13 @@ use bevy::asset::{Handle, LoadContext};
 use bevy::pbr::StandardMaterial;
 use bevy::prelude::*;
 use bevy::render::alpha::AlphaMode;
+use bevy_image::{CompressedImageFormats, ImageSampler, ImageType};
 use std::collections::HashMap;
 
 /// Process all materials from the FBX scene.
 pub fn process_materials(
     scene: &ufbx::Scene,
-    _settings: &FbxLoaderSettings,
+    settings: &FbxLoaderSettings,
     load_context: &mut LoadContext,
 ) -> Result<
     (
@@ -24,7 +25,7 @@ pub fn process_materials(
 > {
     let mut materials = Vec::new();
     let mut named_materials = HashMap::new();
-    let texture_handles = process_textures(scene, load_context)?;
+    let texture_handles = process_textures(scene, settings, load_context)?;
 
     for (index, ufbx_material) in scene.materials.as_ref().iter().enumerate() {
         if ufbx_material.element.element_id == 0 {
@@ -51,75 +52,68 @@ pub fn process_materials(
 }
 
 /// Process textures from materials.
+///
+/// Uses the following priority for each texture:
+/// 1. Embedded textures (`texture.content` non-empty) — decoded via `Image::from_buffer`
+/// 2. External textures via `texture.relative_filename` — already relative to the FBX file
+/// 3. External textures via `.fbm` folder extraction from `texture.filename` / `texture.absolute_filename`
 pub fn process_textures(
     scene: &ufbx::Scene,
+    settings: &FbxLoaderSettings,
     load_context: &mut LoadContext,
-) -> Result<HashMap<u32, Handle<bevy::prelude::Image>>, FbxError> {
+) -> Result<HashMap<u32, Handle<Image>>, FbxError> {
     let mut texture_handles = HashMap::new();
 
-    for texture in scene.textures.as_ref().iter() {
-        let asset_path = load_context.path();
+    for (index, texture) in scene.textures.as_ref().iter().enumerate() {
+        let asset_path = load_context.path().clone();
         let fbx_dir = asset_path
             .path()
             .parent()
-            .unwrap_or_else(|| std::path::Path::new(""));
+            .unwrap_or_else(|| std::path::Path::new(""))
+            .to_path_buf();
 
-        // Construct relative path for Bevy's asset system
+        // Priority 1: Embedded texture data
+        if !texture.content.is_empty() {
+            let ext = extract_extension(&texture.filename).unwrap_or("png");
+            match Image::from_buffer(
+                &texture.content,
+                ImageType::Extension(ext),
+                CompressedImageFormats::NONE,
+                true, // is_srgb
+                ImageSampler::Default,
+                settings.load_materials,
+            ) {
+                Ok(image) => {
+                    let handle = load_context.add_labeled_asset(
+                        FbxAssetLabel::Texture(index).to_string(),
+                        image,
+                    );
+                    texture_handles.insert(texture.element.element_id, handle);
+                    continue;
+                }
+                Err(e) => {
+                    eprintln!("bevy_ufbx: failed to load embedded texture {index}: {e}");
+                    // Fall through to try external paths
+                }
+            }
+        }
+
+        // Priority 2: relative_filename from ufbx (relative to FBX file)
+        if !texture.relative_filename.is_empty() {
+            let rel = texture.relative_filename.as_ref();
+            let is_absolute = rel.starts_with('/')
+                || (rel.len() >= 3 && rel.chars().nth(1) == Some(':'));
+            if !is_absolute {
+                let texture_path = fbx_dir.join(rel).to_string_lossy().to_string();
+                let image_handle = load_context.load(texture_path);
+                texture_handles.insert(texture.element.element_id, image_handle);
+                continue;
+            }
+        }
+
+        // Priority 3: Extract relative path from filename / absolute_filename
         // Preserves .fbm folder structure if present (e.g., "model.fbm/texture.jpg")
-        let relative_path = if !texture.filename.is_empty() {
-            let filename = texture.filename.as_ref();
-
-            // Check if filename contains an absolute path (Unix or Windows style)
-            // Windows paths can have either : followed by / or \
-            let is_absolute = filename.starts_with('/')
-                || (filename.len() >= 3 && filename.chars().nth(1) == Some(':'));
-
-            if is_absolute {
-                // Extract relative path from absolute path
-                // Look for .fbm folder (FBX's standard embedded texture directory)
-                if let Some(fbm_pos) = filename.rfind(".fbm/").or_else(|| filename.rfind(".fbm\\")) {
-                    // Find the start of the .fbm folder name
-                    let before_fbm = &filename[..fbm_pos];
-                    let folder_start = before_fbm.rfind(&['/', '\\'][..])
-                        .map(|p| p + 1)
-                        .unwrap_or(0);
-                    // Extract from folder name onwards: "model.fbm/texture.jpg"
-                    &filename[folder_start..]
-                } else {
-                    // No .fbm folder, extract just the filename
-                    let last_slash = filename.rfind(&['/', '\\'][..]);
-                    if let Some(pos) = last_slash {
-                        &filename[pos + 1..]
-                    } else {
-                        filename
-                    }
-                }
-            } else {
-                // Use as-is (already relative)
-                filename
-            }
-        } else if !texture.absolute_filename.is_empty() {
-            let abs_path = texture.absolute_filename.as_ref();
-            // Extract relative path from absolute_filename
-            // Look for .fbm folder
-            if let Some(fbm_pos) = abs_path.rfind(".fbm/").or_else(|| abs_path.rfind(".fbm\\")) {
-                let before_fbm = &abs_path[..fbm_pos];
-                let folder_start = before_fbm.rfind(&['/', '\\'][..])
-                    .map(|p| p + 1)
-                    .unwrap_or(0);
-                &abs_path[folder_start..]
-            } else {
-                // No .fbm folder, extract just the filename
-                let last_slash = abs_path.rfind(&['/', '\\'][..]);
-                if let Some(pos) = last_slash {
-                    &abs_path[pos + 1..]
-                } else {
-                    abs_path
-                }
-            }
-        } else {
-            ""
-        };
+        let relative_path = extract_relative_texture_path(texture);
 
         if !relative_path.is_empty() {
             let texture_path = fbx_dir
@@ -135,10 +129,63 @@ pub fn process_textures(
     Ok(texture_handles)
 }
 
+/// Extract file extension from a texture filename string.
+fn extract_extension(filename: &ufbx::String) -> Option<&str> {
+    if filename.is_empty() {
+        return None;
+    }
+    let s = filename.as_ref();
+    s.rsplit('.')
+        .next()
+        .filter(|ext| !ext.contains('/') && !ext.contains('\\'))
+}
+
+/// Extract a relative texture path from a ufbx Texture's filename or absolute_filename.
+///
+/// Handles absolute paths by looking for `.fbm` folders (FBX's standard embedded texture
+/// directory) and extracting from there, or falling back to just the filename.
+fn extract_relative_texture_path<'a>(texture: &'a ufbx::Texture) -> &'a str {
+    if !texture.filename.is_empty() {
+        let filename = texture.filename.as_ref();
+
+        let is_absolute = filename.starts_with('/')
+            || (filename.len() >= 3 && filename.chars().nth(1) == Some(':'));
+
+        if is_absolute {
+            extract_from_absolute(filename)
+        } else {
+            filename
+        }
+    } else if !texture.absolute_filename.is_empty() {
+        extract_from_absolute(texture.absolute_filename.as_ref())
+    } else {
+        ""
+    }
+}
+
+/// Extract a relative path from an absolute path, preserving `.fbm` folder structure.
+fn extract_from_absolute(path: &str) -> &str {
+    if let Some(fbm_pos) = path.rfind(".fbm/").or_else(|| path.rfind(".fbm\\")) {
+        let before_fbm = &path[..fbm_pos];
+        let folder_start = before_fbm
+            .rfind(&['/', '\\'][..])
+            .map(|p| p + 1)
+            .unwrap_or(0);
+        &path[folder_start..]
+    } else {
+        let last_slash = path.rfind(&['/', '\\'][..]);
+        if let Some(pos) = last_slash {
+            &path[pos + 1..]
+        } else {
+            path
+        }
+    }
+}
+
 /// Create a StandardMaterial from ufbx material.
 pub fn create_standard_material(
     ufbx_material: &ufbx::Material,
-    texture_handles: &HashMap<u32, Handle<bevy::prelude::Image>>,
+    texture_handles: &HashMap<u32, Handle<Image>>,
 ) -> Result<StandardMaterial, FbxError> {
     let mut material = StandardMaterial::default();
 
