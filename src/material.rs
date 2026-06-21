@@ -7,7 +7,7 @@ use crate::utils::convert_texture_uv_transform;
 use bevy::asset::{Handle, LoadContext};
 use bevy::pbr::StandardMaterial;
 use bevy::prelude::*;
-use bevy::render::alpha::AlphaMode;
+use bevy::material::AlphaMode;
 use std::collections::HashMap;
 
 /// Process all materials from the FBX scene.

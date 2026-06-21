@@ -5,7 +5,7 @@ use bevy::math::Affine2;
 use bevy::pbr::StandardMaterial;
 use bevy::prelude::*;
 use bevy::mesh::skinning::SkinnedMeshInverseBindposes;
-use bevy::scene::Scene;
+use bevy::world_serialization::WorldAsset;
 use std::collections::HashMap;
 
 // ============================================================================
@@ -178,8 +178,8 @@ pub enum FbxInterpolation {
 /// Representation of a loaded FBX file.
 #[derive(Asset, Debug, TypePath)]
 pub struct Fbx {
-    pub scenes: Vec<Handle<Scene>>,
-    pub named_scenes: HashMap<Box<str>, Handle<Scene>>,
+    pub scenes: Vec<Handle<WorldAsset>>,
+    pub named_scenes: HashMap<Box<str>, Handle<WorldAsset>>,
     pub meshes: Vec<Handle<Mesh>>,
     pub named_meshes: HashMap<Box<str>, Handle<Mesh>>,
     pub materials: Vec<Handle<StandardMaterial>>,
@@ -188,7 +188,7 @@ pub struct Fbx {
     pub named_nodes: HashMap<Box<str>, Handle<FbxNode>>,
     pub skins: Vec<Handle<FbxSkin>>,
     pub named_skins: HashMap<Box<str>, Handle<FbxSkin>>,
-    pub default_scene: Option<Handle<Scene>>,
+    pub default_scene: Option<Handle<WorldAsset>>,
     pub axis_system: FbxAxisSystem,
     pub unit_scale: f32,
     pub metadata: FbxMeta,

@@ -7,7 +7,7 @@ use crate::utils::convert_matrix;
 use bevy::asset::{Handle, LoadContext};
 use bevy::pbr::StandardMaterial;
 use bevy::prelude::*;
-use bevy::scene::Scene;
+use bevy::world_serialization::WorldAsset;
 use std::collections::HashMap;
 
 /// Build the final scene with all entities.
@@ -20,7 +20,7 @@ pub fn build_scene(
     mesh_material_info: &[Vec<String>],
     settings: &FbxLoaderSettings,
     load_context: &mut LoadContext,
-) -> Result<Handle<Scene>, FbxError> {
+) -> Result<Handle<WorldAsset>, FbxError> {
     let mut world = World::new();
 
     // Create default material if needed
@@ -67,7 +67,7 @@ pub fn build_scene(
     }
 
     let scene_handle =
-        load_context.add_labeled_asset(FbxAssetLabel::Scene(0).to_string(), Scene::new(world));
+        load_context.add_labeled_asset(FbxAssetLabel::Scene(0).to_string(), WorldAsset::new(world));
 
     Ok(scene_handle)
 }
@@ -91,7 +91,7 @@ pub fn spawn_lights(scene: &ufbx::Scene, world: &mut World) {
                                 light.color.z as f32,
                             ),
                             illuminance: light.intensity as f32 * 10000.0,
-                            shadows_enabled: light.cast_shadows,
+                            shadow_maps_enabled: light.cast_shadows,
                             ..Default::default()
                         },
                         transform,
@@ -108,7 +108,7 @@ pub fn spawn_lights(scene: &ufbx::Scene, world: &mut World) {
                                 light.color.z as f32,
                             ),
                             intensity: light.intensity as f32 * 1000.0,
-                            shadows_enabled: light.cast_shadows,
+                            shadow_maps_enabled: light.cast_shadows,
                             ..Default::default()
                         },
                         transform,
@@ -125,7 +125,7 @@ pub fn spawn_lights(scene: &ufbx::Scene, world: &mut World) {
                                 light.color.z as f32,
                             ),
                             intensity: light.intensity as f32 * 1000.0,
-                            shadows_enabled: light.cast_shadows,
+                            shadow_maps_enabled: light.cast_shadows,
                             inner_angle: light.inner_angle as f32,
                             outer_angle: light.outer_angle as f32,
                             ..Default::default()
