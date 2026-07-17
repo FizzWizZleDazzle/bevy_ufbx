@@ -4,7 +4,7 @@ use bevy::asset::AssetPath;
 /// Labels that can be used to load part of an FBX asset
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FbxAssetLabel {
-    /// `Scene{}`: FBX Scene as a Bevy [`Scene`](bevy::scene::Scene)
+    /// `Scene{}`: FBX Scene as a Bevy [`WorldAsset`](bevy::world_serialization::WorldAsset)
     Scene(usize),
     /// `Mesh{}`: FBX Mesh as a Bevy [`Mesh`](bevy::render::mesh::Mesh)
     Mesh(usize),

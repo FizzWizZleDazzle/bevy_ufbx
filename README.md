@@ -6,6 +6,7 @@ FBX asset loader for [Bevy](https://bevyengine.org) powered by [ufbx](https://gi
 
 | bevy | bevy_ufbx |
 |------|-----------|
+| 0.19 | 0.19      |
 | 0.18 | 0.18      |
 | 0.17 | 0.17      |
 
@@ -13,14 +14,15 @@ FBX asset loader for [Bevy](https://bevyengine.org) powered by [ufbx](https://gi
 
 ```toml
 [dependencies]
-bevy     = "0.18"
-bevy_ufbx = "0.18"
+bevy     = "0.19"
+bevy_ufbx = "0.19"
 ```
 
 ## Quick start
 
 ```rust
 use bevy::prelude::*;
+use bevy::world_serialization::WorldAssetRoot;
 use bevy_ufbx::FbxPlugin;
 
 fn main() {
@@ -33,7 +35,7 @@ fn main() {
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(Camera3d::default());
-    commands.spawn(SceneRoot(
+    commands.spawn(WorldAssetRoot(
         asset_server.load("character.fbx#Scene0"),
     ));
 }
@@ -72,7 +74,7 @@ Individual sub-assets can be addressed with `#Label` path suffixes:
 
 | Label             | Type                | Description                             |
 |-------------------|---------------------|-----------------------------------------|
-| `Scene{N}`        | `Scene`             | Scene hierarchy (N = scene index)       |
+| `Scene{N}`        | `WorldAsset`        | Scene hierarchy (N = scene index)       |
 | `Mesh{N}`         | `Mesh`              | Triangulated mesh                       |
 | `Material{N}`     | `StandardMaterial`  | PBR material                            |
 | `Node{N}`         | `FbxNode`           | Transform node                          |
@@ -80,7 +82,7 @@ Individual sub-assets can be addressed with `#Label` path suffixes:
 | `DefaultMaterial` | `StandardMaterial`  | Fallback material when none is present  |
 
 ```rust
-let scene    = asset_server.load::<Scene>("model.fbx#Scene0");
+let scene    = asset_server.load::<WorldAsset>("model.fbx#Scene0");
 let mesh     = asset_server.load::<Mesh>("model.fbx#Mesh0");
 let material = asset_server.load::<StandardMaterial>("model.fbx#Material0");
 ```
