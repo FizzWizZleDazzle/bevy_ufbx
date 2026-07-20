@@ -12,6 +12,7 @@
 //! `load_with_settings` section at the bottom of `setup`.
 
 use bevy::prelude::*;
+use bevy::world_serialization::WorldAssetRoot;
 use bevy_ufbx::{Fbx, FbxLoaderSettings, FbxPlugin};
 
 fn main() {
@@ -44,7 +45,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         DirectionalLight {
             illuminance: 10_000.0,
-            shadows_enabled: true,
+            shadow_maps_enabled: true,
             ..default()
         },
         Transform::from_rotation(Quat::from_euler(
@@ -68,7 +69,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     // --- Default loading ---
     let scene = asset_server.load(format!("{path}#Scene0"));
-    commands.spawn((SceneRoot(scene), Spinning));
+    commands.spawn((WorldAssetRoot(scene), Spinning));
 
     // --- Custom settings (uncomment to use instead) ---
     // let fbx = asset_server.load_with_settings::<Fbx, FbxLoaderSettings>(
